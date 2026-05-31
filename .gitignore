@@ -1,0 +1,21 @@
+# deps
+node_modules/
+
+# next
+.next/
+out/
+
+# env
+.env
+.env*.local
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# misc
+.DS_Store
+*.log
+.vercel
+next-env.d.ts
+tsconfig.tsbuildinfo

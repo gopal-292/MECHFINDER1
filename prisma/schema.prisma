@@ -1,0 +1,92 @@
+// WebMech — Prisma schema (Stage 0: SQLite. Swap provider to "postgresql" for Stage 1.)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MECHANIC
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  ON_WAY
+  ARRIVED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  mechanic        Mechanic?
+  serviceRequests ServiceRequest[] @relation("UserRequests")
+  reviews         Review[]         @relation("UserReviews")
+}
+
+model Mechanic {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  specializations String?
+  vehicleTypes    String?
+  lat             Float?
+  lng             Float?
+  serviceRadiusKm Float   @default(10)
+  isApproved      Boolean @default(false)
+  isAvailable     Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  serviceRequests ServiceRequest[] @relation("MechanicJobs")
+  reviews         Review[]         @relation("MechanicReviews")
+}
+
+model ServiceRequest {
+  id               String        @id @default(cuid())
+  userId           String
+  user             User          @relation("UserRequests", fields: [userId], references: [id], onDelete: Cascade)
+  mechanicId       String?
+  mechanic         Mechanic?     @relation("MechanicJobs", fields: [mechanicId], references: [id])
+  status           RequestStatus @default(PENDING)
+  latitude         Float
+  longitude        Float
+  address          String?
+  vehicleType      String?
+  vehicleModel     String?
+  issueDescription String
+  photoUrls        String        @default("[]") // JSON array (SQLite has no native array; switch to String[] on Postgres)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  review Review?
+}
+
+model Review {
+  id               String         @id @default(cuid())
+  serviceRequestId String         @unique
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User           @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+  mechanicId       String
+  mechanic         Mechanic       @relation("MechanicReviews", fields: [mechanicId], references: [id], onDelete: Cascade)
+  rating           Int
+  comment          String?
+  createdAt        DateTime       @default(now())
+}
