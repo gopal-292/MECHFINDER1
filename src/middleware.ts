@@ -18,6 +18,9 @@ export default auth((req) => {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/icons") ||
+    pathname === "/sw.js" ||
+    pathname === "/offline.html" ||
+    pathname === "/manifest.webmanifest" ||
     pathname.match(/\.(png|jpg|jpeg|svg|ico|webp)$/);
 
   if (isPublic) {

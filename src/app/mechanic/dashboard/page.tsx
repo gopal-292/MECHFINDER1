@@ -1,6 +1,6 @@
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MechanicConsole } from "./mechanic-console";
 
 export default async function MechanicDashboardPage() {
   const session = await auth();
@@ -11,36 +11,28 @@ export default async function MechanicDashboardPage() {
       <header className="border-b bg-white">
         <div className="container flex items-center justify-between py-4">
           <h1 className="text-xl font-bold">WebMech Mechanic</h1>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <Button variant="ghost" size="sm" type="submit">
-              Sign out
-            </Button>
-          </form>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-muted-foreground">{session.user.email}</span>
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/" });
+              }}
+            >
+              <Button variant="ghost" size="sm" type="submit">
+                Sign out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 
-      <section className="container py-10 space-y-6">
-        <div>
+      <section className="container py-8">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold">Hi {session.user.name?.split(" ")[0]} —</h2>
-          <p className="text-muted-foreground">You&apos;re approved and ready to take jobs.</p>
+          <p className="text-muted-foreground">Go online to start receiving nearby jobs.</p>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Nearby jobs</CardTitle>
-            <CardDescription>None right now — sit tight.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Real-time job feed + accept button + GPS broadcast toggle ship in the next iteration.
-            </p>
-          </CardContent>
-        </Card>
+        <MechanicConsole />
       </section>
     </main>
   );

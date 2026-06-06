@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ACTIVE_STATUSES } from "@/lib/geo";
+import { triageIssue } from "@/lib/triage";
 
 const createSchema = z.object({
   latitude: z.number().min(-90).max(90),
@@ -64,6 +65,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Best-effort AI triage. Returns null (and we skip it) when GEMINI_API_KEY
+  // is unset or the call fails, so request creation never depends on it.
+  const aiTriage = await triageIssue({
+    issueDescription: parsed.data.issueDescription,
+    vehicleType: parsed.data.vehicleType,
+    vehicleModel: parsed.data.vehicleModel,
+  });
+
   const created = await prisma.serviceRequest.create({
     data: {
       userId: session.user.id,
@@ -73,6 +82,7 @@ export async function POST(req: Request) {
       vehicleType: parsed.data.vehicleType,
       vehicleModel: parsed.data.vehicleModel,
       issueDescription: parsed.data.issueDescription,
+      aiTriage,
     },
     select: { id: true },
   });

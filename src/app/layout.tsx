@@ -1,9 +1,21 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 
 export const metadata: Metadata = {
   title: "WebMech — Roadside Assistance",
   description: "Stuck on the road? Get a verified mechanic to you in minutes.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "WebMech",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "WebMech",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -19,7 +31,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }

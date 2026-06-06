@@ -71,6 +71,7 @@ model ServiceRequest {
   vehicleType      String?
   vehicleModel     String?
   issueDescription String
+  aiTriage         String?       // AI-generated triage summary (Gemini). Null when AI is disabled or unavailable.
   photoUrls        String        @default("[]") // JSON array (SQLite has no native array; switch to String[] on Postgres)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

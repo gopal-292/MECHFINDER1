@@ -66,6 +66,7 @@ export async function GET(_req: Request, { params }: RouteCtx) {
       vehicleType: request.vehicleType,
       vehicleModel: request.vehicleModel,
       issueDescription: request.issueDescription,
+      aiTriage: request.aiTriage,
       photoUrls: parsePhotoUrls(request.photoUrls),
       createdAt: request.createdAt,
       updatedAt: request.updatedAt,
@@ -76,12 +77,12 @@ export async function GET(_req: Request, { params }: RouteCtx) {
 }
 
 const patchSchema = z.object({
-  action: z.literal("cancel"),
+  action: z.enum(["cancel", "accept", "on_way", "arrived", "complete"]),
 });
 
 export async function PATCH(req: Request, { params }: RouteCtx) {
   const session = await auth();
-  if (!session?.user || session.user.role !== "USER") {
+  if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -96,31 +97,106 @@ export async function PATCH(req: Request, { params }: RouteCtx) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
   }
+  const { action } = parsed.data;
 
   const request = await prisma.serviceRequest.findUnique({
     where: { id: params.id },
-    select: { id: true, userId: true, status: true },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      mechanicId: true,
+      mechanic: { select: { userId: true } },
+    },
   });
   if (!request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (request.userId !== session.user.id) {
+
+  // ----- USER: cancel -----
+  if (action === "cancel") {
+    if (session.user.role !== "USER" || request.userId !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    // Can only cancel before the mechanic has arrived.
+    if (!ACTIVE_STATUSES.includes(request.status) || request.status === "ARRIVED") {
+      return NextResponse.json(
+        { error: "This request can no longer be cancelled." },
+        { status: 409 },
+      );
+    }
+    const updated = await prisma.serviceRequest.update({
+      where: { id: params.id },
+      data: { status: "CANCELLED", mechanicId: null },
+      select: { id: true, status: true },
+    });
+    return NextResponse.json({ ok: true, request: updated });
+  }
+
+  // ----- MECHANIC: accept / advance status -----
+  if (session.user.role !== "MECHANIC") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Can only cancel before the mechanic has arrived.
-  if (!ACTIVE_STATUSES.includes(request.status) || request.status === "ARRIVED") {
+  const mechanic = await prisma.mechanic.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true, isApproved: true },
+  });
+  if (!mechanic || !mechanic.isApproved) {
+    return NextResponse.json({ error: "Mechanic not approved" }, { status: 403 });
+  }
+
+  if (action === "accept") {
+    if (request.status !== "PENDING" || request.mechanicId) {
+      return NextResponse.json(
+        { error: "This job is no longer available." },
+        { status: 409 },
+      );
+    }
+    // One active job at a time.
+    const existingActive = await prisma.serviceRequest.findFirst({
+      where: {
+        mechanicId: mechanic.id,
+        status: { in: ["ACCEPTED", "ON_WAY", "ARRIVED"] },
+      },
+      select: { id: true },
+    });
+    if (existingActive) {
+      return NextResponse.json(
+        { error: "Finish your current job before accepting another." },
+        { status: 409 },
+      );
+    }
+    const updated = await prisma.serviceRequest.update({
+      where: { id: params.id },
+      data: { status: "ACCEPTED", mechanicId: mechanic.id },
+      select: { id: true, status: true },
+    });
+    return NextResponse.json({ ok: true, request: updated });
+  }
+
+  // Remaining actions require this mechanic to own the job.
+  if (request.mechanic?.userId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const transitions: Record<string, { from: string; to: string }> = {
+    on_way: { from: "ACCEPTED", to: "ON_WAY" },
+    arrived: { from: "ON_WAY", to: "ARRIVED" },
+    complete: { from: "ARRIVED", to: "COMPLETED" },
+  };
+  const t = transitions[action];
+  if (!t || request.status !== t.from) {
     return NextResponse.json(
-      { error: "This request can no longer be cancelled." },
+      { error: `Cannot ${action.replace("_", " ")} from ${request.status}.` },
       { status: 409 },
     );
   }
 
   const updated = await prisma.serviceRequest.update({
     where: { id: params.id },
-    data: { status: "CANCELLED" },
+    data: { status: t.to as never },
     select: { id: true, status: true },
   });
-
   return NextResponse.json({ ok: true, request: updated });
 }

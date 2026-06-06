@@ -18,6 +18,7 @@ type TrackedRequest = {
   vehicleType: string | null;
   vehicleModel: string | null;
   issueDescription: string;
+  aiTriage: string | null;
   createdAt: string;
   mechanic: {
     name: string;
@@ -216,6 +217,14 @@ export default function TrackPage({ params }: { params: { id: string } }) {
             <p className="text-muted-foreground">{request.issueDescription}</p>
             {request.address ? (
               <p className="text-muted-foreground">Landmark: {request.address}</p>
+            ) : null}
+            {request.aiTriage ? (
+              <div className="mt-3 rounded-md border border-violet-200 bg-violet-50 p-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+                  AI triage
+                </p>
+                <p className="text-violet-900">{request.aiTriage}</p>
+              </div>
             ) : null}
           </CardContent>
         </Card>
