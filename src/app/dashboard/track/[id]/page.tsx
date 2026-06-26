@@ -161,7 +161,7 @@ export default function TrackPage({ params }: { params: { id: string } }) {
               <CardTitle className="text-lg">Your mechanic</CardTitle>
               <CardDescription>{request.mechanic.name}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
+            <CardContent className="space-y-3 text-sm">
               {request.mechanic.distanceKm != null ? (
                 <p>
                   <span className="font-medium">{formatDistance(request.mechanic.distanceKm)}</span>{" "}
@@ -171,14 +171,24 @@ export default function TrackPage({ params }: { params: { id: string } }) {
                     : ""}
                 </p>
               ) : null}
-              {request.mechanic.phone ? (
-                <a
-                  href={`tel:${request.mechanic.phone}`}
-                  className="font-medium text-primary hover:underline"
-                >
-                  Call {request.mechanic.phone}
-                </a>
-              ) : null}
+
+              {/* Contact — shared once your request is accepted */}
+              <div className="rounded-md border bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Mechanic contact
+                </p>
+                <p className="mt-1 font-medium">{request.mechanic.name}</p>
+                {request.mechanic.phone ? (
+                  <a
+                    href={`tel:${request.mechanic.phone}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {request.mechanic.phone}
+                  </a>
+                ) : (
+                  <p className="text-muted-foreground">No phone number on file.</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         ) : null}

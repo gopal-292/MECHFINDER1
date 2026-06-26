@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,9 +23,23 @@ type NearbyMechanic = {
 };
 
 export default function NewRequestPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewRequestForm />
+    </Suspense>
+  );
+}
+
+function NewRequestForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const presetVehicle = searchParams.get("vehicle");
   const [geo, setGeo] = useState<GeoState>({ status: "loading" });
-  const [vehicleType, setVehicleType] = useState<string>("Car");
+  const [vehicleType, setVehicleType] = useState<string>(() =>
+    presetVehicle && (VEHICLE_TYPES as readonly string[]).includes(presetVehicle)
+      ? presetVehicle
+      : "Car",
+  );
   const [vehicleModel, setVehicleModel] = useState("");
   const [issueDescription, setIssueDescription] = useState("");
   const [address, setAddress] = useState("");

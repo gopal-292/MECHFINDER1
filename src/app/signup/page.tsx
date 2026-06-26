@@ -97,14 +97,21 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone (optional)</Label>
+              <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 autoComplete="tel"
+                inputMode="tel"
+                placeholder="e.g. +91 98765 43210"
+                minLength={7}
+                required
               />
+              <p className="text-xs text-muted-foreground">
+                We use this to connect you with your mechanic.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password (min 6 chars)</Label>

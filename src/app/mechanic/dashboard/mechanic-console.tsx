@@ -69,11 +69,53 @@ function getPosition(): Promise<GeolocationPosition> {
   });
 }
 
+/**
+ * Open Google Maps directions routed from the mechanic's *current* GPS
+ * position to the customer. Falls back to letting Google Maps use the device's
+ * own current location if the browser can't supply a position.
+ */
+function openDirections(
+  to: { lat: number; lng: number },
+  from?: { lat: number; lng: number } | null,
+) {
+  const params = new URLSearchParams({
+    api: "1",
+    destination: `${to.lat},${to.lng}`,
+    travelmode: "driving",
+  });
+  if (from != null) {
+    params.set("origin", `${from.lat},${from.lng}`);
+  }
+  const url = `https://www.google.com/maps/dir/?${params.toString()}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export function MechanicConsole() {
   const [feed, setFeed] = useState<Feed | null>(null);
   const [busy, setBusy] = useState(false);
+  const [directionsBusy, setDirectionsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
+
+  const navigateToJob = useCallback(async (to: { lat: number; lng: number }) => {
+    if (!("geolocation" in navigator)) {
+      openDirections(to);
+      return;
+    }
+    setDirectionsBusy(true);
+    try {
+      const pos = await getPosition();
+      openDirections(to, {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    } catch {
+      // Permission denied or timeout — still open with the destination only.
+      openDirections(to);
+    } finally {
+      setDirectionsBusy(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -271,6 +313,24 @@ export function MechanicConsole() {
               {activeJob.aiTriage ? <TriageNote text={activeJob.aiTriage} /> : null}
             </div>
 
+            {/* Contact — shared once the job is accepted */}
+            <div className="rounded-md border bg-white p-3 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Customer contact
+              </p>
+              <p className="mt-1 font-medium">{activeJob.customerName}</p>
+              {activeJob.customerPhone ? (
+                <a
+                  href={`tel:${activeJob.customerPhone}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {activeJob.customerPhone}
+                </a>
+              ) : (
+                <p className="text-muted-foreground">No phone number on file.</p>
+              )}
+            </div>
+
             <div className="overflow-hidden rounded-md border">
               <iframe
                 title="Customer location"
@@ -285,14 +345,14 @@ export function MechanicConsole() {
                   <a href={`tel:${activeJob.customerPhone}`}>Call customer</a>
                 </Button>
               ) : null}
-              <Button asChild variant="outline">
-                <a
-                  href={`https://www.openstreetmap.org/directions?to=${activeJob.latitude}%2C${activeJob.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Directions
-                </a>
+              <Button
+                variant="outline"
+                disabled={directionsBusy}
+                onClick={() =>
+                  navigateToJob({ lat: activeJob.latitude, lng: activeJob.longitude })
+                }
+              >
+                {directionsBusy ? "Getting location…" : "Directions"}
               </Button>
               {activeJob.status === "ACCEPTED" ? (
                 <Button onClick={() => act(activeJob.id, "on_way")} disabled={busy}>

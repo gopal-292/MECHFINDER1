@@ -7,7 +7,7 @@ const bodySchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email().toLowerCase(),
   password: z.string().min(6).max(72),
-  phone: z.string().max(20).optional().or(z.literal("").transform(() => undefined)),
+  phone: z.string().trim().min(7, "A valid phone number is required").max(20),
   role: z.enum(["USER", "MECHANIC"]),
 });
 

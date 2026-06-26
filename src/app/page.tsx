@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
@@ -57,6 +58,48 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Skills showcase */}
+      <section className="border-y border-slate-200 bg-slate-50">
+        <div className="container py-16 md:py-20">
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+            <p className="text-sm uppercase tracking-widest text-amber-600">
+              Real skills, on the spot
+            </p>
+            <h2 className="mt-2 text-3xl font-bold md:text-4xl">
+              Whatever stops you, they fix it
+            </h2>
+            <p className="mt-3 text-slate-600">
+              Every mechanic on WebMech is hands-on and road-tested — from dead batteries to
+              flat tyres to engine trouble.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Showcase
+              src="/showcase/mechanic-engine.jpg"
+              title="Engine repairs"
+              body="On-site diagnosis and fixes for stalls, overheating, and breakdowns."
+            />
+            <Showcase
+              src="/showcase/mechanic-tyre.jpg"
+              title="Tyre & wheel"
+              body="Flat tyre changes, punctures, and roadside wheel swaps in minutes."
+            />
+            <Showcase
+              src="/showcase/mechanic-diagnostic.jpg"
+              title="Diagnostics & battery"
+              body="Scan tools to read fault codes, plus jump-starts for dead batteries."
+            />
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            <Button asChild size="lg" className="bg-amber-400 text-slate-950 hover:bg-amber-300">
+              <Link href="/signup">Find a mechanic near you</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       <footer className="container border-t border-slate-200 py-6 text-sm text-slate-500">
         Built with Next.js, Prisma, NextAuth, Tailwind. Free-tier everything.
       </footer>
@@ -69,6 +112,26 @@ function Feature({ title, body }: { title: string; body: string }) {
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
       <h3 className="mb-1 text-lg font-semibold text-amber-600">{title}</h3>
       <p className="text-sm text-slate-600">{body}</p>
+    </div>
+  );
+}
+
+function Showcase({ src, title, body }: { src: string; title: string; body: string }) {
+  return (
+    <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="relative aspect-[4/3] overflow-hidden">
+        <Image
+          src={src}
+          alt={title}
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
+      <div className="p-5">
+        <h3 className="text-lg font-semibold">{title}</h3>
+        <p className="mt-1 text-sm text-slate-600">{body}</p>
+      </div>
     </div>
   );
 }
